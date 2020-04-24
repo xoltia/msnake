@@ -8,6 +8,13 @@ const path = require('path');
 const htmlPath = path.join(__dirname, 'index.html');
 const html = process.env.CACHE_HTML ? fs.readFileSync(htmlPath) : null;
 const server = http.createServer((req, res) => {
+    const query = url.parse(req.url, true).query;
+    if (!query.room) {
+        res.writeHead(302, {
+            Location: `/?room=${shortid.generate()}${Object.entries(query).map(([k, v]) => `&${k}=${v}`).join('')}`,
+        });
+        return res.end();
+    }
     res.setHeader('Content-Type', 'text/html');
     if (html) {
         res.write(html);
@@ -177,11 +184,22 @@ wss.on('connection', (ws, req, room, player) => {
             }
         };
     });
+
+    ws.on('close', () => {
+        room.players = room.players.filter(p => p !== player);
+        if (room.players.length < 1) {
+            clearInterval(room.interval);
+            delete rooms[room.id];
+            return;
+        }
+        room.players[0].isHost = true;
+    });
 });
 
 server.on('upgrade', (request, socket, head) => {
     const query = url.parse(request.url, true).query;
-    const roomId = query.room || shortid.generate();
+    const roomId = query.room;
+    if (!roomId) return;
     const roomSize = query.size && !isNaN(query.size) ? Number(query.size) : defaultSize;
     const tickRate = query.tick_rate && !isNaN(query.tick_rate) ? Number(query.tick_rate) : defaultTickRate;
     const appleCount = query.apples && !isNaN(query.apples) ? Number(query.apples) : defaultAppleCount;
