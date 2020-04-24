@@ -58,7 +58,10 @@
                     }
                     i++;
                 }
-                fillCell(msg.apple[0], msg.apple[1], 'red');
+
+                for (let apple of msg.apples) {
+                    fillCell(apple[0], apple[1], 'red');
+                }
             } else if (msg.event === 'set_board') {
                 boardSize = msg.size;
                 cellSize = Math.round(750 / boardSize);

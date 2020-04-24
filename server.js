@@ -25,6 +25,7 @@ const wss = new WebSocket.Server({ noServer: true });
 const rooms = {};
 const defaultTickRate = 10;
 const defaultSize = 50;
+const defaultAppleCount = 1;
 const directionVelocities = {
     'left':  [-1, 0],
     'right': [1, 0],
@@ -39,13 +40,30 @@ function broadcastState(room) {
             players: room.players
                         .filter(p => !p.isDead)
                         .map(p => p.positions),
-            apple: room.apple
+            apples: room.apples
         }));
     }
 }
 
-function moveApple(room) {
-    room.apple = [Math.floor(Math.random() * room.size), Math.floor(Math.random() * room.size)];
+function posIsFree(room, x, y) {
+    for (let player of room.players) {
+        for (let cell of player.positions) {
+            if (cell[0] === x && cell[1] === y)
+                return false;
+        }
+    }
+    return true;
+}
+
+function randomFreePosition(room) {
+    let pos;
+    do {
+        pos = [
+            Math.floor(Math.random() * room.size),
+            Math.floor(Math.random() * room.size)
+        ]
+    } while (!posIsFree(room, ...pos));
+    return pos;
 }
 
 function tickRoom(room) {
@@ -84,9 +102,11 @@ function tickRoom(room) {
             }
         }
 
-        if (head[0] === room.apple[0] && head[1] === room.apple[1]) {
-            player.growNextTick = true;
-            moveApple(room);
+        for (let [i, apple] of room.apples.entries()) {
+            if (apple[0] === head[0] && apple[1] === head[1]) {
+                player.growNextTick = true;
+                room.apples[i] = randomFreePosition(room);
+            }
         }
     }
 
@@ -94,8 +114,7 @@ function tickRoom(room) {
         // TODO: function for resetting/starting room
         clearInterval(room.interval);
         room.isStarted = false;
-        let i = 0;
-        for (let player of room.players) {
+        for (let [i, player] of room.players.entries()) {
             player.isDead = false;
             player.positions = [
                 i === 0 ? [1, 1] :
@@ -104,8 +123,7 @@ function tickRoom(room) {
                 i === 3 ? [room.size - 1, room.size - 1] :
                 undefined
             ];
-            i++;
-            player.direction = i % 2 === 0 ? 'left' : 'right'
+            player.direction = i % 2 === 0 ? 'right' : 'left'
             player.growNextTick = false;
         }
     }
@@ -121,7 +139,6 @@ wss.on('connection', (ws, req, room, player) => {
             return;
         if (message.cmd === 'start' && player.isHost && !room.isStarted) {
             room.isStarted = true;
-            moveApple(room);
             room.interval = setInterval(tickRoom.bind(null, room), 1000 / room.tickRate);
         } else if (message.cmd === 'set_direction' && room.isStarted) {
             if (!message.dir)
@@ -136,10 +153,25 @@ server.on('upgrade', (request, socket, head) => {
     const roomId = query.room || shortid.generate();
     const roomSize = query.size && !isNaN(query.size) ? Number(query.size) : defaultSize;
     const tickRate = query.tick_rate && !isNaN(query.tick_rate) ? Number(query.tick_rate) : defaultTickRate;
+    const appleCount = query.apples && !isNaN(query.apples) ? Number(query.apples) : defaultAppleCount;
 
-    if (!rooms[roomId])
-        rooms[roomId] = { size: roomSize, isStarted: false, players: [], id: roomId, tickRate };
+    if (!rooms[roomId]) {
+        rooms[roomId] = {
+            size: roomSize,
+            isStarted: false,
+            players: [],
+            id: roomId,
+            apples: [],
+            tickRate
+        };
+    }
     const room = rooms[roomId];
+    for (let i = 0; i < appleCount; i++) {
+        room.apples.push([
+            Math.floor(Math.random() * room.size),
+            Math.floor(Math.random() * room.size)
+        ]);
+    }
 
     if (room.isStarted || room.players.length === 4) {
         return socket.end('HTTP/1.1 423 Locked\r\n\r\nThis game has started or has the maximum allowed of players.\r\n\r\n\r\n');
