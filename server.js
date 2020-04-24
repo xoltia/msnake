@@ -95,6 +95,15 @@ function tickRoom(room) {
         }
         for (let player2 of room.players) {
             if (player2.isDead) continue;
+            const head2 = player2.positions[0];
+            if (player !== player2 && head[0] === head2[0] && head[1] === head2[1]) {
+                if (player.positions.length > player2.positions.length) {
+                    player.isDead = true;
+                } else {
+                    player2.isDead = true;
+                }
+                continue;
+            }
             for (let cell of player2.positions) {
                 if (cell === head) continue;
                 if (head[0] === cell[0] && head[1] === cell[1]) {
@@ -119,9 +128,9 @@ function tickRoom(room) {
             player.isDead = false;
             player.positions = [
                 i === 0 ? [1, 1] :
-                i === 1 ? [room.size - 1, 1] :
-                i === 2 ? [1, room.size - 1] :
-                i === 3 ? [room.size - 1, room.size - 1] :
+                i === 1 ? [room.size - 2, 1] :
+                i === 2 ? [1, room.size - 2] :
+                i === 3 ? [room.size - 2, room.size - 2] :
                 undefined
             ];
             player.direction = i % 2 === 0 ? 'right' : 'left'
@@ -133,7 +142,7 @@ function tickRoom(room) {
 
 wss.on('connection', (ws, req, room, player) => {
     ws.send(JSON.stringify({ event: 'set_board', size: room.size }));
-
+    broadcastState(room);
     ws.on('message', (data) => {
         const message = JSON.parse(data);
         if (!message.cmd)
@@ -184,9 +193,9 @@ server.on('upgrade', (request, socket, head) => {
         isHost: room.players.length === 0,
         positions: [
             room.players.length === 0 ? [1, 1] :
-            room.players.length === 1 ? [roomSize - 1, 1] :
-            room.players.length === 2 ? [1, roomSize - 1] :
-            room.players.length === 3 ? [roomSize - 1, roomSize - 1] :
+            room.players.length === 1 ? [roomSize - 2, 1] :
+            room.players.length === 2 ? [1, roomSize - 2] :
+            room.players.length === 3 ? [roomSize - 2, roomSize - 2] :
             undefined
         ],
         isDead: false,

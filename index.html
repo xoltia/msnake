@@ -5,10 +5,40 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Document</title>
+
+    <style>
+        html, body {
+            background: rgb(32, 32, 32);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+        }
+
+        #board {
+            margin-bottom: 10px;
+            background: black;
+        }
+
+        .btn {
+            min-width: 150px;
+            padding: 10px;
+            color: white;
+            border-radius: 5px;
+            border: none;
+            background-color: purple;
+            font-size: 16px;
+        }
+
+        .btn:hover {
+            background-color: rgb(109, 0, 109);
+            cursor: pointer;
+        }
+    </style>
 </head>
 <body>
-    <canvas id="board" style="background: black;"></canvas>
-    <button onclick="start()">Start</button>
+    <canvas id="board"></canvas>
+    <button class="btn" onclick="start()">Start</button>
     <script>
         const board = document.getElementById('board');
         const ctx = board.getContext('2d');
