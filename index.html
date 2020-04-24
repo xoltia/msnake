@@ -12,14 +12,10 @@
     <script>
         const board = document.getElementById('board');
         const ctx = board.getContext('2d');
-        // TODO: GET FROM SERVER
-        const boardSize = 50;
-        const cellSize = 15;
-        const cellPadding = 1;
-        board.height = cellSize * boardSize + cellPadding * boardSize + 1;
-        board.width = board.height;
         const colors = ['green', 'blue', 'yellow', 'purple'];
-        const ws = new WebSocket(`ws://${window.location.host}?room=${new URLSearchParams(window.location.search).get('room')}`);
+        const ws = new WebSocket(`ws://${window.location.host}${window.location.search}`);
+        let boardSize;
+        let cellSize;
 
         function start() {
             ws.send(JSON.stringify({ cmd: 'start' }));
@@ -27,8 +23,8 @@
 
         function fillCell(x, y, color) {
             ctx.fillStyle = color;
-            const xs = x * cellSize + x * cellPadding;
-            const ys = y * cellSize + y * cellPadding;
+            const xs = x * cellSize + x;
+            const ys = y * cellSize + y;
             ctx.beginPath();
             ctx.fillRect(xs, ys, cellSize, cellSize);
             ctx.stroke();
@@ -58,13 +54,16 @@
                 let i = 0;
                 for (let cells of msg.players) {
                     for (let cell of cells) {
-                        const x = cell[0] * cellSize + cell[0] * cellPadding;
-                        const y = cell[1] * cellSize + cell[1] * cellPadding;
                         fillCell(cell[0], cell[1], colors[i]);
                     }
                     i++;
                 }
                 fillCell(msg.apple[0], msg.apple[1], 'red');
+            } else if (msg.event === 'set_board') {
+                boardSize = msg.size;
+                cellSize = Math.round(750 / boardSize);
+                board.height = cellSize * boardSize + boardSize + 1;
+                board.width = board.height;
             }
         }
     </script>

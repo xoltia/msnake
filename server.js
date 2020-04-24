@@ -99,9 +99,9 @@ function tickRoom(room) {
             player.isDead = false;
             player.positions = [
                 i === 0 ? [1, 1] :
-                i === 1 ? [defaultSize - 1, 1] :
-                i === 2 ? [1, defaultSize - 1] :
-                i === 3 ? [defaultSize - 1, defaultSize - 1] :
+                i === 1 ? [room.size - 1, 1] :
+                i === 2 ? [1, room.size - 1] :
+                i === 3 ? [room.size - 1, room.size - 1] :
                 undefined
             ];
             i++;
@@ -113,6 +113,8 @@ function tickRoom(room) {
 }
 
 wss.on('connection', (ws, req, room, player) => {
+    ws.send(JSON.stringify({ event: 'set_board', size: room.size }));
+
     ws.on('message', (data) => {
         const message = JSON.parse(data);
         if (!message.cmd)
@@ -120,7 +122,7 @@ wss.on('connection', (ws, req, room, player) => {
         if (message.cmd === 'start' && player.isHost && !room.isStarted) {
             room.isStarted = true;
             moveApple(room);
-            room.interval = setInterval(tickRoom.bind(null, room), 1000 / defaultTickRate);
+            room.interval = setInterval(tickRoom.bind(null, room), 1000 / room.tickRate);
         } else if (message.cmd === 'set_direction' && room.isStarted) {
             if (!message.dir)
                 return;
@@ -130,10 +132,13 @@ wss.on('connection', (ws, req, room, player) => {
 });
 
 server.on('upgrade', (request, socket, head) => {
-    const roomId = url.parse(request.url, true).query.room || shortid.generate();
-    
+    const query = url.parse(request.url, true).query;
+    const roomId = query.room || shortid.generate();
+    const roomSize = query.size && !isNaN(query.size) ? Number(query.size) : defaultSize;
+    const tickRate = query.tick_rate && !isNaN(query.tick_rate) ? Number(query.tick_rate) : defaultTickRate;
+
     if (!rooms[roomId])
-        rooms[roomId] = { size: defaultSize, isStarted: false, players: [], id: roomId };
+        rooms[roomId] = { size: roomSize, isStarted: false, players: [], id: roomId, tickRate };
     const room = rooms[roomId];
 
     if (room.isStarted || room.players.length === 4) {
@@ -145,9 +150,9 @@ server.on('upgrade', (request, socket, head) => {
         isHost: room.players.length === 0,
         positions: [
             room.players.length === 0 ? [1, 1] :
-            room.players.length === 1 ? [defaultSize - 1, 1] :
-            room.players.length === 2 ? [1, defaultSize - 1] :
-            room.players.length === 3 ? [defaultSize - 1, defaultSize - 1] :
+            room.players.length === 1 ? [size - 1, 1] :
+            room.players.length === 2 ? [1, size - 1] :
+            room.players.length === 3 ? [size - 1, size - 1] :
             undefined
         ],
         isDead: false,
