@@ -166,8 +166,8 @@ server.on('upgrade', (request, socket, head) => {
         };
         for (let i = 0; i < appleCount; i++) {
             rooms[roomId].apples.push([
-                Math.floor(Math.random() * room.size),
-                Math.floor(Math.random() * room.size)
+                Math.floor(Math.random() * rooms[roomId].size),
+                Math.floor(Math.random() * rooms[roomId].size)
             ]);
         }
     }
