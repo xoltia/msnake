@@ -182,9 +182,9 @@ server.on('upgrade', (request, socket, head) => {
         isHost: room.players.length === 0,
         positions: [
             room.players.length === 0 ? [1, 1] :
-            room.players.length === 1 ? [size - 1, 1] :
-            room.players.length === 2 ? [1, size - 1] :
-            room.players.length === 3 ? [size - 1, size - 1] :
+            room.players.length === 1 ? [roomSize - 1, 1] :
+            room.players.length === 2 ? [1, roomSize - 1] :
+            room.players.length === 3 ? [roomSize - 1, roomSize - 1] :
             undefined
         ],
         isDead: false,
