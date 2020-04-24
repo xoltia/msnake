@@ -94,6 +94,7 @@ function tickRoom(room) {
             continue;
         }
         for (let player2 of room.players) {
+            if (player2.isDead) continue;
             for (let cell of player2.positions) {
                 if (cell === head) continue;
                 if (head[0] === cell[0] && head[1] === cell[1]) {
