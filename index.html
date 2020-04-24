@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <canvas id="board" style="background: black;"></canvas>
+    <button onclick="start()">Start</button>
+    <script>
+        const board = document.getElementById('board');
+        const ctx = board.getContext('2d');
+        // TODO: GET FROM SERVER
+        const boardSize = 50;
+        const cellSize = 15;
+        const cellPadding = 1;
+        board.height = cellSize * boardSize + cellPadding * boardSize + 1;
+        board.width = board.height;
+        const colors = ['green', 'blue', 'yellow', 'purple'];
+        const ws = new WebSocket(`ws://${window.location.host}?room=${new URLSearchParams(window.location.search).get('room')}`);
+
+        function start() {
+            ws.send(JSON.stringify({ cmd: 'start' }));
+        }
+
+        function fillCell(x, y, color) {
+            ctx.fillStyle = color;
+            const xs = x * cellSize + x * cellPadding;
+            const ys = y * cellSize + y * cellPadding;
+            ctx.beginPath();
+            ctx.fillRect(xs, ys, cellSize, cellSize);
+            ctx.stroke();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.code === 'KeyW') {
+                ws.send(JSON.stringify({ cmd: 'set_direction', dir: 'up' }));
+            } else if (e.code === 'KeyA') {
+                ws.send(JSON.stringify({ cmd: 'set_direction', dir: 'left' }));
+            } else if (e.code === 'KeyS') {
+                ws.send(JSON.stringify({ cmd: 'set_direction', dir: 'down' }));
+            } else if (e.code === 'KeyD') {
+                ws.send(JSON.stringify({ cmd: 'set_direction', dir: 'right' }));
+            }
+        });
+
+        ws.onopen = () => {
+            console.log('Connected');
+        }
+
+        ws.onmessage = (message) => {
+            const msg = JSON.parse(message.data);
+            console.log(msg);
+            if (msg.event === 'update_board') {
+                ctx.clearRect(0, 0, board.width, board.height);
+                let i = 0;
+                for (let cells of msg.players) {
+                    for (let cell of cells) {
+                        const x = cell[0] * cellSize + cell[0] * cellPadding;
+                        const y = cell[1] * cellSize + cell[1] * cellPadding;
+                        fillCell(cell[0], cell[1], colors[i]);
+                    }
+                    i++;
+                }
+                fillCell(msg.apple[0], msg.apple[1], 'red');
+            }
+        }
+    </script>
+</body>
+</html>
