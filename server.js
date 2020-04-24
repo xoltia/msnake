@@ -1,14 +1,14 @@
 const http = require('http');
 const WebSocket = require('ws');
 const shortid = require('shortid');
-const url = require('url');
+const querystring = require('querystring');
 const fs = require('fs');
 const path = require('path');
 
 const htmlPath = path.join(__dirname, 'index.html');
 const html = process.env.CACHE_HTML ? fs.readFileSync(htmlPath) : null;
 const server = http.createServer((req, res) => {
-    const query = url.parse(req.url, true).query;
+    const query = querystring.parse(req.url.split('?')[1]);
     if (!query.room) {
         res.writeHead(302, {
             Location: `/?room=${shortid.generate()}${Object.entries(query).map(([k, v]) => `&${k}=${v}`).join('')}`,
@@ -197,7 +197,7 @@ wss.on('connection', (ws, req, room, player) => {
 });
 
 server.on('upgrade', (request, socket, head) => {
-    const query = url.parse(request.url, true).query;
+    const query = querystring.parse(request.url.split('?')[1]);
     const roomId = query.room;
     if (!roomId) return;
     const roomSize = query.size && !isNaN(query.size) ? Number(query.size) : defaultSize;
