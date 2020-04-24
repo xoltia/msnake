@@ -164,14 +164,15 @@ server.on('upgrade', (request, socket, head) => {
             apples: [],
             tickRate
         };
+        for (let i = 0; i < appleCount; i++) {
+            rooms[roomId].apples.push([
+                Math.floor(Math.random() * room.size),
+                Math.floor(Math.random() * room.size)
+            ]);
+        }
     }
     const room = rooms[roomId];
-    for (let i = 0; i < appleCount; i++) {
-        room.apples.push([
-            Math.floor(Math.random() * room.size),
-            Math.floor(Math.random() * room.size)
-        ]);
-    }
+
 
     if (room.isStarted || room.players.length === 4) {
         return socket.end('HTTP/1.1 423 Locked\r\n\r\nThis game has started or has the maximum allowed of players.\r\n\r\n\r\n');
