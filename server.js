@@ -154,7 +154,28 @@ wss.on('connection', (ws, req, room, player) => {
             if (!message.dir)
                 return;
             player.direction = message.dir;
-        }
+        } else if (message.cmd === 'update_room' && !room.isStarted && player.isHost) {
+            if (message.appleCount && !isNaN(message.appleCount)) {
+                room.apples = [];
+                for (let i = 0; i < Number(message.appleCount); i++) {
+                    room.apples.push([
+                        Math.floor(Math.random() * room.size),
+                        Math.floor(Math.random() * room.size)
+                    ]);
+                }
+            }
+
+            if (message.size && !isNaN(message.size)) {
+                room.size = Number(message.size);
+                for (let player of room.players) {
+                    player.ws.send(JSON.stringify({ event: 'set_board', size: room.size }));
+                }
+            }
+
+            if (message.tickRate && !isNaN(message.tickRate)) {
+                room.tickRate = Number(message.tickRate);
+            }
+        };
     });
 });
 

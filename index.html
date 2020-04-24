@@ -8,6 +8,8 @@
 
     <style>
         html, body {
+            color: white;
+            font-family: Arial, Helvetica, sans-serif;
             background: rgb(32, 32, 32);
             display: flex;
             align-items: center;
@@ -34,21 +36,54 @@
             background-color: rgb(109, 0, 109);
             cursor: pointer;
         }
+
+        .input-section {
+            margin: 3px;
+        }
     </style>
 </head>
 <body>
     <canvas id="board"></canvas>
+    <div class="input-section">
+        <label>Tick Rate</label>
+        <input type="number" min="1" max="50" id="tickRate">
+    </div>
+    <div class="input-section">
+        <label>Size</label>
+        <input type="number" min="15" max="200" id="size">
+    </div>
+    <div class="input-section">
+        <label>Apple Count</label>
+        <input type="number" min="1" max="20" id="apples">
+    </div>
     <button class="btn" onclick="start()">Start</button>
     <script>
         const board = document.getElementById('board');
         const ctx = board.getContext('2d');
         const colors = ['green', 'blue', 'yellow', 'purple'];
+        const query = new URLSearchParams(window.location.search);
         const ws = new WebSocket(`ws://${window.location.host}${window.location.search}`);
         let boardSize;
         let cellSize;
 
+        const trInput = document.getElementById('tickRate');
+        const sizeInput = document.getElementById('size');
+        const appleInput = document.getElementById('apples');
+        trInput.value = query.get('tick_rate') || 10;
+        sizeInput.value = query.get('size') || 50;
+        appleInput.value = query.get('apples') || 1;
+
         function start() {
-            ws.send(JSON.stringify({ cmd: 'start' }));
+            ws.send(JSON.stringify({
+                cmd: 'update_room',
+                appleCount: appleInput.value,
+                size: sizeInput.value,
+                tickRate: trInput.value,
+            }))
+
+            ws.send(JSON.stringify({
+                cmd: 'start'
+            }));
         }
 
         function fillCell(x, y, color) {
