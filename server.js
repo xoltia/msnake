@@ -91,8 +91,23 @@ function tickRoom(room) {
     }
 
     if (room.players.filter(p => !p.isDead).length === 0) {
+        // TODO: function for resetting/starting room
         clearInterval(room.interval);
-        delete rooms[room.id];
+        room.isStarted = false;
+        let i = 0;
+        for (let player of room.players) {
+            player.isDead = false;
+            player.positions = [
+                i === 0 ? [1, 1] :
+                i === 1 ? [defaultSize - 1, 1] :
+                i === 2 ? [1, defaultSize - 1] :
+                i === 3 ? [defaultSize - 1, defaultSize - 1] :
+                undefined
+            ];
+            i++;
+            player.direction = i % 2 === 0 ? 'left' : 'right'
+            player.growNextTick = false;
+        }
     }
     broadcastState(room);
 }
@@ -102,8 +117,8 @@ wss.on('connection', (ws, req, room, player) => {
         const message = JSON.parse(data);
         if (!message.cmd)
             return;
-
-        if (message.cmd === 'start' && player.isHost) {
+        console.log(message);
+        if (message.cmd === 'start' && player.isHost && !room.isStarted) {
             room.isStarted = true;
             moveApple(room);
             room.interval = setInterval(tickRoom.bind(null, room), 1000 / defaultTickRate);
@@ -120,7 +135,7 @@ server.on('upgrade', (request, socket, head) => {
     
     if (!rooms[roomId])
         rooms[roomId] = { size: defaultSize, isStarted: false, players: [], id: roomId };
-    room = rooms[roomId];
+    const room = rooms[roomId];
 
     if (room.isStarted || room.players.length === 4) {
         return socket.end('HTTP/1.1 423 Locked\r\n\r\nThis game has started or has the maximum allowed of players.\r\n\r\n\r\n');
