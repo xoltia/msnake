@@ -117,7 +117,6 @@ wss.on('connection', (ws, req, room, player) => {
         const message = JSON.parse(data);
         if (!message.cmd)
             return;
-        console.log(message);
         if (message.cmd === 'start' && player.isHost && !room.isStarted) {
             room.isStarted = true;
             moveApple(room);
