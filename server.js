@@ -76,7 +76,16 @@ function randomFreePosition(room) {
 function tickRoom(room) {
     for (let player of room.players) {
         if (player.isDead) continue;
+        const nextMovement = player.movements.shift();
+        if (nextMovement && !(
+            (nextMovement === 'right' && player.direction === 'left') ||
+            (nextMovement === 'left' && player.direction === 'right') ||
+            (nextMovement === 'up' && player.direction === 'down') ||
+            (nextMovement === 'down' && player.direction === 'up'))) {
+                player.direction = nextMovement;
+        }
         const posUpdate = directionVelocities[player.direction];
+        if (!posUpdate) continue;
         const newHead = player.positions[0].map((v, i) => v + posUpdate[i]);
         const oldPositions = [...player.positions];
 
@@ -160,7 +169,7 @@ wss.on('connection', (ws, req, room, player) => {
         } else if (message.cmd === 'set_direction' && room.isStarted) {
             if (!message.dir)
                 return;
-            player.direction = message.dir;
+            player.movements.push(message.dir);
         } else if (message.cmd === 'update_room' && !room.isStarted && player.isHost) {
             if (message.appleCount && !isNaN(message.appleCount)) {
                 room.apples = [];
@@ -229,6 +238,7 @@ server.on('upgrade', (request, socket, head) => {
 
     const player = {
         direction: room.players.length % 2 === 0 ? 'right' : 'left',
+        movements: [],
         isHost: room.players.length === 0,
         positions: [
             room.players.length === 0 ? [1, 1] :
